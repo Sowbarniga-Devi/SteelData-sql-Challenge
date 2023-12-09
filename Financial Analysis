@@ -1,0 +1,96 @@
+-- 1. What are the names of all the customers who live in New York?
+SELECT *
+FROM Customers
+WHERE City ='New York';
+
+-- 2. What is the total number of accounts in the Accounts table?
+SELECT count(*) as num_of_accounts_intotal
+FROM Accounts;
+
+-- 3. What is the total balance of all checking accounts?
+SELECT SUM(Balance) total_balance_checking_acc
+FROM Accounts
+WHERE AccountType = 'Checking';
+
+-- 4. What is the total balance of all accounts associated with customers who live in Los Angeles?
+SELECT C.CustomerID,SUM(A.Balance) acc_balance
+FROM Customers C
+JOIn Accounts A
+ON C.CustomerID = A.CustomerID
+WHERE C.City = 'Los Angeles'
+GROUP BY 1;
+
+-- 5. Which branch has the highest average account balance?
+SELECT B.BranchID,AVG(A.Balance) Avg_balance
+FROM Branches B
+JOIN Accounts A
+ON A.BranchID = B.BranchID
+GROUP BY 1
+ORDER BY 1 DESC
+LIMIT 1;
+
+-- 6. Which customer has the highest current balance in their accounts?
+SELECT C.CustomerID,
+		CONCAT(C.FirstName,' ',C.LastName) Cust_name,
+        A.Balance
+FROM Customers C
+JOIN Accounts A
+ON A.CustomerID = C.CustomerID
+ORDER BY A.Balance DESC;
+
+-- 7. Which customer has made the most transactions in the Transactions table?
+SELECT 
+	*
+FROM Transactions;
+
+-- 8. Which branch has the highest total balance across all of its accounts?
+SELECT 
+		B.BranchID, 
+        B.BranchName,
+        SUM(A.Balance) acc_balance
+FROM Branches B
+JOIN Accounts A
+ON A.BranchID = B.BranchID
+GROUP BY 1,2
+ORDER BY 3 DESC
+LIMIT 1;
+
+-- 9. Which customer has the highest total balance across all of their accounts, including savings and checking accounts?
+WITH Acc_balance_percustomer AS
+(
+  SELECT 
+	A.CustomerID, 
+    CONCAT(C.FirstName,' ',C.LastName) Customer_name,
+    SUM(A.Balance) Acc_balance
+FROM Customers C
+JOIN Accounts A ON A.CustomerID = C.CustomerID
+GROUP BY 1
+  )
+  
+SELECT  
+		CustomerID,
+        Customer_name,
+        Acc_balance
+FROM Acc_balance_percustomer
+WHERE Acc_balance IN 
+(
+  SELECT MAX(Acc_balance)
+  FROM Acc_balance_percustomer
+)
+-- 10. Which branch has the highest number of transactions in the Transactions table?
+
+WITH Trans_count AS (
+    SELECT B.BranchName Branchname,
+  			COUNT(T.TransactionID) AS no_of_transaction
+    FROM Branches B
+    JOIN Accounts A ON B.BranchID = A.BranchID
+    JOIN Transactions T ON A.AccountID = T.AccountID
+    GROUP BY B.BranchName
+)
+
+SELECT Branchname
+FROM Trans_count
+WHERE no_of_transaction IN 
+(SELECT MAX (no_of_transaction)
+FROm Trans_count
+) 
